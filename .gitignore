@@ -1,3 +1,60 @@
-*
-!*/
-!.gitignore
+# Compiled binaries and executables
+*.exe
+*.out
+*.app
+*.dSYM/
+
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Libraries (optional - uncomment if you want to ignore them)
+# *.lib
+# *.a
+# *.la
+# *.lo
+# *.dll
+# *.so
+# *.so.*
+# *.dylib
+
+# Executables without extensions (common in Linux)
+tcp_client
+tcp_client1
+tcp_client2
+tcp_client3
+tcp_ser1
+tcp_ser2
+tcp_ser3
+tcp_server
+udp_client
+udp_client1
+udp_server
+udp_ser1
+
+# Build directories
+build/
+bin/
+obj/
+
+# IDE and editor files
+.vscode
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
