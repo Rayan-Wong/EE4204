@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     if (sh == NULL) 
     {
         printf("Cannot get host name");
-        exit(0);
+        exit(1);
     }
 
     // Extract IP address list from host structure
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     ser_addr.sin_family = AF_INET;                                          // IPv4 protocol
     ser_addr.sin_port = htons(MYUDP_PORT);                                  // Server port (convert to network byte order)
     memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));   // Copy IP address from DNS result
-    bzero(&(ser_addr.sin_zero), 8);
+    bzero(&(ser_addr.sin_zero), 8); // bzero() zeroes specified number of bytes starting from front to back
 
     // Perform the transmission and receiving using varying-batch-size protocol
     ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, sizeof(struct sockaddr_in), &len);

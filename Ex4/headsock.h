@@ -1,4 +1,5 @@
 // headfile for TCP program
+#include <stdbool.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
