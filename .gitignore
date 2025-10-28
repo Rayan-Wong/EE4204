@@ -39,6 +39,8 @@ udp_client1
 udp_client4
 udp_server
 udp_ser1
+udp_client4
+udp_ser4
 
 # Build directories
 build/

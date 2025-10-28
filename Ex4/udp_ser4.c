@@ -1,4 +1,5 @@
 #include "headsock.h"
+bool done = false;
 
 void str_ser4(int sockfd);
 
@@ -24,7 +25,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	printf("start receiving\n");
-	while(1) 
+	while (!done) 
     {
 		str_ser4(sockfd); 
 	}
@@ -39,6 +40,7 @@ void str_ser4(int sockfd)
 	char recvs[DATALEN];
     struct sockaddr_in addr;
 	struct ack_so ack;
+    struct pack_so received_pack;
 	int n = 0;
     int len = sizeof(struct sockaddr_in);
 	long lseek = 0;
@@ -52,20 +54,22 @@ void str_ser4(int sockfd)
     {
         while (count < expecting)
         {
-            n = recvfrom(sockfd, &recvs, DATALEN, 0, (struct sockaddr *) &addr, &len); // recive packet
+            n = recvfrom(sockfd, &received_pack, sizeof(received_pack), 0, (struct sockaddr *) &addr, &len); // recive packet
             if (n == -1)
             {
                 printf("error when receiving\n");
                 exit(1);
             }
-            if (recvs[n - 1] == '\0')
+            int remaining = n - HEADLEN;
+            int data_len = remaining;
+            if (received_pack.data[data_len - 1] == '\0')
             {
                 end = true;
                 count = 999;
-                n--;
+                data_len--;
             }
-            memcpy((buf + lseek), recvs, n);
-            lseek += n;
+            memcpy((buf + lseek), received_pack.data, data_len);
+            lseek += data_len;
             count += 1;
         }
         switch (expecting) {
@@ -91,7 +95,7 @@ void str_ser4(int sockfd)
             exit(1);
         }
     }
-    fp = fopen("myUDPreceive.txt", "wt");
+    fp = fopen("myUDPreceive.txt", "wb");
     if (fp == NULL)
     {
         printf("File not existing\n");

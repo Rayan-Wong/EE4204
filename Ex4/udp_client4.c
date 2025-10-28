@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     }
 
     // Open file to send
-    if ((fp = fopen ("myfile.txt","r+t")) == NULL) 
+    if ((fp = fopen ("myfile.txt","rb")) == NULL) 
     {
         printf("File doesn't exit\n");
         exit(0);
