@@ -72,20 +72,6 @@ void str_ser4(int sockfd)
             lseek += data_len;
             count += 1;
         }
-        switch (expecting) {
-            case 1:
-                expecting = 2;
-                break;
-            case 2:
-                expecting = 3;
-                break;
-            case 3:
-                expecting = 1;
-                break;
-            default:
-                printf("sumtin wron");
-                exit(1);
-        }
         count = 0;
         ack.num = 1;
         ack.len = 0;

@@ -187,12 +187,6 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 
             // Move to next batch
             du_in_batch = 0;
-            batch_size++;
-            // Cycle between batch sizes of 1 to 2 to 3 back to 1
-            if (batch_size > 3)
-            {
-                batch_size = 1;
-            }
         }
     }
 
