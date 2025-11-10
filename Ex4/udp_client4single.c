@@ -133,11 +133,11 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
     gettimeofday(&sendt, NULL);
     
     // Main transmission loop
-    while (ci <= lsize) {
+    while (ci < lsize) {
         // Determine size of this packet's data
-        if ((lsize + 1 - ci) <= DATALEN) 
+        if ((lsize - ci) <= DATALEN) 
         {
-            slen = lsize + 1 - ci; // Last packet: send remaining bytes
+            slen = lsize - ci; // Last packet: send remaining bytes
         }
         else
         {

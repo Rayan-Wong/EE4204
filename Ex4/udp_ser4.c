@@ -47,8 +47,7 @@ void str_ser4(int sockfd)
 	bool end = false;
     int expecting = 1;
     int count = 0;
-
-    printf("receiving data!\n");
+    long total_file_size = 0;  // Track expected total file size
 
     while (!end)
     {
@@ -60,14 +59,40 @@ void str_ser4(int sockfd)
                 printf("error when receiving\n");
                 exit(1);
             }
+            printf("receiving data!\n");
+            
+            // Get total file size from first packet
+            if (lseek == 0 && count == 0) {
+                total_file_size = received_pack.len;
+                printf("Expected file size: %ld bytes\n", total_file_size);
+                
+                // Check if file fits in buffer
+                if (total_file_size > BUFSIZE) {
+                    printf("Error: File size (%ld bytes) exceeds buffer size (%d bytes)\n", 
+                           total_file_size, BUFSIZE);
+                    printf("Please increase BUFSIZE in headsock.h\n");
+                    exit(1);
+                }
+            }
+            
             int remaining = n - HEADLEN;
             int data_len = remaining;
-            if (received_pack.data[data_len - 1] == '\0')
-            {
+            
+            // Check if this is the last packet based on total bytes received
+            if (lseek + data_len >= total_file_size) {
                 end = true;
                 count = 999;
-                data_len--;
+                // Adjust data_len to not exceed file size
+                data_len = total_file_size - lseek;
             }
+            
+            // Prevent buffer overflow
+            if (lseek + data_len > BUFSIZE) {
+                printf("Buffer overflow prevented! lseek=%ld, data_len=%d, BUFSIZE=%d\n",
+                       lseek, data_len, BUFSIZE);
+                exit(1);
+            }
+            
             memcpy((buf + lseek), received_pack.data, data_len);
             lseek += data_len;
             count += 1;
@@ -104,4 +129,5 @@ void str_ser4(int sockfd)
     fwrite(buf, 1, lseek, fp);
     fclose(fp);
     printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
+    done = true;  // Set done AFTER file is written
 }

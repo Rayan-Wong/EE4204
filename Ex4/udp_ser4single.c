@@ -47,8 +47,7 @@ void str_ser4(int sockfd)
 	bool end = false;
     int expecting = 1;
     int count = 0;
-
-    printf("receiving data!\n");
+    long total_file_size = 0;
 
     while (!end)
     {
@@ -60,18 +59,37 @@ void str_ser4(int sockfd)
                 printf("error when receiving\n");
                 exit(1);
             }
+            printf("receiving data!\n");
             int remaining = n - HEADLEN;
             int data_len = remaining;
-            if (received_pack.data[data_len - 1] == '\0')
+            
+            // Get total file size from first packet
+            if (lseek == 0)
             {
-                end = true;
-                count = 999;
-                data_len--;
+                total_file_size = received_pack.len;
             }
+            
+            // Check for buffer overflow
+            if (lseek + data_len > BUFSIZE)
+            {
+                printf("Error: buffer overflow! Received data exceeds BUFSIZE.\n");
+                end = true;
+                break;
+            }
+            
             memcpy((buf + lseek), received_pack.data, data_len);
             lseek += data_len;
             count += 1;
+            
+            // Check if we've received all data
+            if (lseek >= total_file_size)
+            {
+                end = true;
+                break;
+            }
         }
+        
+        // Send ACK after batch (or when end is reached)
         count = 0;
         ack.num = 1;
         ack.len = 0;
@@ -89,5 +107,6 @@ void str_ser4(int sockfd)
     }
     fwrite(buf, 1, lseek, fp);
     fclose(fp);
+    done = true;  // Signal server to terminate after receiving file
     printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
 }

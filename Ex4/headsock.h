@@ -18,7 +18,7 @@
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
 #define DATALEN 100
-#define BUFSIZE 60000
+#define BUFSIZE 1024000  // 1MB buffer - can handle files up to 1MB
 #define PACKLEN 108
 #define HEADLEN 8
 
