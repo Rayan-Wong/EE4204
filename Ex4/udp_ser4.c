@@ -47,8 +47,8 @@ void str_ser4(int sockfd)
 	bool end = false;
     int expecting = 1;
     int count = 0;
-    long total_file_size = 0;  // Track expected total file size
-    int expecting_seq = 0;     // Track expected sequence number
+    long total_file_size = 0; // Track expected total file size
+    int expecting_seq = 0; // Track expected sequence number
 
     while (!end)
     {
@@ -140,5 +140,5 @@ void str_ser4(int sockfd)
     fwrite(buf, 1, lseek, fp);
     fclose(fp);
     printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
-    done = true;  // Set done AFTER file is written
+    done = true; // Set done AFTER file is written
 }
