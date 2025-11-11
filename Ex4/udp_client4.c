@@ -7,14 +7,14 @@ void tv_sub(struct  timeval *out, struct timeval *in); // Calculate the time int
 int main(int argc, char **argv)
 {
     // Socket and network variables
-    int sockfd;                    // Socket file descriptor
-    float ti, rt;                       // ti = transmission time (ms), rt = data rate
-    long len;                           // Total bytes transmitted
-    struct sockaddr_in ser_addr;        // Server address structure
-    char **pptr;                        // Pointer for iterating through aliases
-    struct hostent *sh;                 // Host entity structure from DNS lookup
-    struct in_addr **addrs;             // Array of IP addresses
-    FILE *fp;                           // File pointer for the file to send
+    int sockfd; // Socket file descriptor
+    float ti, rt; // ti = transmission time (ms), rt = data rate
+    long len; // Total bytes transmitted
+    struct sockaddr_in ser_addr; // Server address structure
+    char **pptr; // Pointer for iterating through aliases
+    struct hostent *sh; // Host entity structure from DNS lookup
+    struct in_addr **addrs; // Array of IP addresses
+    FILE *fp; // File pointer for the file to send
 
     // Check command line arguments: program requires hostname as parameter
     if (argc != 2) 
@@ -35,15 +35,15 @@ int main(int argc, char **argv)
     addrs = (struct in_addr **)sh->h_addr_list;
     
     // Display host information
-    printf("Canonical name: %s\n", sh->h_name);  // Print official hostname
-    for (pptr=sh->h_aliases; *pptr != NULL; pptr++)  // Loop through all aliases
+    printf("Canonical name: %s\n", sh->h_name); // Print official hostname
+    for (pptr=sh->h_aliases; *pptr != NULL; pptr++) // Loop through all aliases
     {
         printf("The aliases name is: %s\n", *pptr);
     }
-    switch (sh->h_addrtype)  // Check address family type
+    switch (sh->h_addrtype) // Check address family type
     {
         case AF_INET:
-            printf("AF_INET\n");  // IPv4 address
+            printf("AF_INET\n"); // IPv4 address
             break;
         default:
             printf("unknown addrtype\n");
@@ -67,9 +67,9 @@ int main(int argc, char **argv)
     }
 
     // Configure server address structure
-    ser_addr.sin_family = AF_INET;                                          // IPv4 protocol
-    ser_addr.sin_port = htons(MYUDP_PORT);                                  // Server port (convert to network byte order)
-    memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));   // Copy IP address from DNS result
+    ser_addr.sin_family = AF_INET; // IPv4 protocol
+    ser_addr.sin_port = htons(MYUDP_PORT); // Server port (convert to network byte order)
+    memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr)); // Copy IP address from DNS result
     bzero(&(ser_addr.sin_zero), 8); // bzero() zeroes specified number of bytes starting from front to back
 
     // Perform the transmission and receiving using varying-batch-size protocol
@@ -82,33 +82,33 @@ int main(int argc, char **argv)
     printf("Time(ms) : %.3f, Data sent(byte): %ld\nData rate: %f (Kbytes/s)\n", ti, (long)len, rt);
     
     // Clean up resources
-    close(sockfd);   // Close socket
-    fclose(fp);      // Close file
+    close(sockfd); // Close socket
+    fclose(fp); // Close file
     exit(0);
 }
 
 float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *len) 
 {
 	// Buffer and file handling variables
-	char *buf;                          // Pointer to buffer that will hold entire file
-	long lsize, ci;                     // lsize = total file size, ci = current index position in buffer
+	char *buf; // Pointer to buffer that will hold entire file
+	long lsize, ci; // lsize = total file size, ci = current index position in buffer
 	
 	// Network packet structures
-	struct ack_so ack;                  // Structure to receive acknowledgments from server
-    struct pack_so pack_sends;          // Structure for data packets (contains header + data)
+	struct ack_so ack; // Structure to receive acknowledgments from server
+    struct pack_so pack_sends; // Structure for data packets (contains header + data)
 	
 	// Transmission control variables
-	int n, slen;                        // n = bytes sent/received, slen = size of current packet's data
-    int batch_size = 1;                 // Current batch size (will cycle 1 -> 2 -> 3 -> 1)
-    int du_in_batch = 0;                // Counter: how many DUs sent in current batch
+	int n, slen; // n = bytes sent/received, slen = size of current packet's data
+    int batch_size = 1; // Current batch size (will cycle 1 -> 2 -> 3 -> 1)
+    int du_in_batch = 0; // Counter: how many DUs sent in current batch
 	
 	// Timing variables
-	float time_inv = 0.0;               // Will store transmission time in milliseconds
-	struct timeval sendt, recvt;        // Timestamps for start and end of transmission
-	struct timeval timeout;             // Timeout for receiving ACK
+	float time_inv = 0.0; // Will store transmission time in milliseconds
+	struct timeval sendt, recvt; // Timestamps for start and end of transmission
+	struct timeval timeout; // Timeout for receiving ACK
 	
     socklen_t from_len;
-	ci = 0;  // Initialize current index to start of file
+	ci = 0; // Initialize current index to start of file
 	
 	// Set receive timeout (500ms)
 	timeout.tv_sec = 0;
@@ -118,9 +118,9 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 	}
 
     // Determine file size by seeking to end
-    fseek(fp , 0 , SEEK_END);           // Move file pointer to end
-	lsize = ftell(fp);                  // Get current position (which is the file size)
-	rewind(fp);                         // Move file pointer back to beginning
+    fseek(fp , 0 , SEEK_END); // Move file pointer to end
+	lsize = ftell(fp); // Get current position (which is the file size)
+	rewind(fp); // Move file pointer back to beginning
 	
 	// Display file and packet information
 	printf("The file length is %d bytes\n", (int)lsize);
@@ -135,7 +135,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
     
     // Read entire file into buffer
     fread(buf, 1, lsize, fp); // Read 'lsize' bytes from file into buf
-    buf[lsize] = '\0';  // Null-terminate the buffer
+    buf[lsize] = '\0'; // Null-terminate the buffer
     
     // Start timing the transmission
     gettimeofday(&sendt, NULL);
@@ -153,8 +153,8 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
         }
 
         // Fill packet structure
-        pack_sends.num = ci / DATALEN;              // Sequence number (which packet this is)
-        pack_sends.len = lsize;                     // Total file length (server needs this)
+        pack_sends.num = ci / DATALEN; // Sequence number (which packet this is)
+        pack_sends.len = lsize; // Total file length (server needs this)
         memcpy(pack_sends.data, (buf + ci), slen); // Copy data from file buffer to packet
 
         // Send packet via UDP

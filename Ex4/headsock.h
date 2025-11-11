@@ -17,20 +17,20 @@
 #define NEWFILE (O_WRONLY|O_CREAT|O_TRUNC)
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
-#define DATALEN 100
+#define DATALEN 1000
 #define BUFSIZE 1024000  
 #define HEADLEN 8   
 #define PACKLEN (DATALEN + HEADLEN)  
 
-struct pack_so			//data packet structure
+struct pack_so //data packet structure
 {
-uint32_t num;				// the sequence number
-uint32_t len;					// the packet length
+uint32_t num; // the sequence number
+uint32_t len; // the packet length
 char data[DATALEN];	//the packet data
 };
 
 struct ack_so
 {
-uint32_t num;  // Changed to uint32_t to match pack_so and support large sequence numbers
-uint32_t len;  // Changed to uint32_t to match pack_so
+uint32_t num; // Changed to uint32_t to match pack_so and support large sequence numbers
+uint32_t len; // Changed to uint32_t to match pack_so
 };

@@ -48,7 +48,7 @@ void str_ser4(int sockfd)
     int expecting = 1;
     int count = 0;
     long total_file_size = 0;
-    int expecting_seq = 0;     // Track expected sequence number
+    int expecting_seq = 0; // Track expected sequence number
 
     while (!end)
     {
@@ -120,6 +120,6 @@ void str_ser4(int sockfd)
     }
     fwrite(buf, 1, lseek, fp);
     fclose(fp);
-    done = true;  // Signal server to terminate after receiving file
+    done = true; // Signal server to terminate after receiving file
     printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
 }

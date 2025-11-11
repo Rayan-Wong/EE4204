@@ -26,21 +26,21 @@
 # *.dylib
 
 # Executables without extensions (common in Linux)
-tcp_client
-tcp_client1
-tcp_client2
-tcp_client3
-tcp_ser1
-tcp_ser2
-tcp_ser3
-tcp_server
-udp_client
-udp_client1
-udp_client4
-udp_server
-udp_ser1
-udp_client4
-udp_ser4
+*tcp_client
+*tcp_client1
+*tcp_client2
+*tcp_client3
+*tcp_ser1
+*tcp_ser2
+*tcp_ser3
+*tcp_server
+*udp_client
+*udp_client1
+*udp_server
+*udp_ser1
+*udp_client4
+*udp_ser4
+*udp_server4
 
 # Build directories
 build/
