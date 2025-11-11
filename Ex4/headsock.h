@@ -18,9 +18,9 @@
 #define MYTCP_PORT 4950
 #define MYUDP_PORT 5350
 #define DATALEN 100
-#define BUFSIZE 1024000  // 1MB buffer - can handle files up to 1MB
-#define PACKLEN 108
-#define HEADLEN 8
+#define BUFSIZE 1024000  
+#define HEADLEN 8   
+#define PACKLEN (DATALEN + HEADLEN)  
 
 struct pack_so			//data packet structure
 {
@@ -31,6 +31,6 @@ char data[DATALEN];	//the packet data
 
 struct ack_so
 {
-uint8_t num;
-uint8_t len;
+uint32_t num;  // Changed to uint32_t to match pack_so and support large sequence numbers
+uint32_t len;  // Changed to uint32_t to match pack_so
 };

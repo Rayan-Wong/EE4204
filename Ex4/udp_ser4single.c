@@ -48,6 +48,7 @@ void str_ser4(int sockfd)
     int expecting = 1;
     int count = 0;
     long total_file_size = 0;
+    int expecting_seq = 0;     // Track expected sequence number
 
     while (!end)
     {
@@ -59,7 +60,16 @@ void str_ser4(int sockfd)
                 printf("error when receiving\n");
                 exit(1);
             }
-            printf("receiving data!\n");
+            
+            // Check sequence number for out-of-order detection
+            if (received_pack.num != expecting_seq) {
+                printf("Out of order! Expected seq %d, got %d - discarding\n", 
+                       expecting_seq, received_pack.num);
+                continue; // Discard and wait for retransmission
+            }
+            
+            printf("receiving data! seq=%d\n", received_pack.num);
+            
             int remaining = n - HEADLEN;
             int data_len = remaining;
             
@@ -67,6 +77,7 @@ void str_ser4(int sockfd)
             if (lseek == 0)
             {
                 total_file_size = received_pack.len;
+                printf("Expected file size: %ld bytes\n", total_file_size);
             }
             
             // Check for buffer overflow
@@ -80,6 +91,7 @@ void str_ser4(int sockfd)
             memcpy((buf + lseek), received_pack.data, data_len);
             lseek += data_len;
             count += 1;
+            expecting_seq++; // Increment expected sequence number
             
             // Check if we've received all data
             if (lseek >= total_file_size)
@@ -89,15 +101,16 @@ void str_ser4(int sockfd)
             }
         }
         
-        // Send ACK after batch (or when end is reached)
+        // Send cumulative ACK after each packet (single DU variant)
         count = 0;
-        ack.num = 1;
+        ack.num = expecting_seq - 1; // Cumulative ACK: last successfully received sequence number
         ack.len = 0;
         if (sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&addr, len) == -1)
         {
             printf("send ack error!\n");
             exit(1);
         }
+        printf("Sent cumulative ACK for seq=%d\n", ack.num);
     }
     fp = fopen("bigfilereceive.bin", "wb");
     if (fp == NULL)

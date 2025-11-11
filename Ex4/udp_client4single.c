@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     // Check command line arguments: program requires hostname as parameter
     if (argc != 2) 
     {
-        printf("Parameters do not match");
+        printf("Parameters do not match\n");
         exit(1);
     }
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     sh = gethostbyname(argv[1]);
     if (sh == NULL) 
     {
-        printf("Cannot get host name");
+        printf("Cannot get host name\n");
         exit(1);
     }
 
@@ -105,9 +105,17 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 	// Timing variables
 	float time_inv = 0.0;               // Will store transmission time in milliseconds
 	struct timeval sendt, recvt;        // Timestamps for start and end of transmission
+	struct timeval timeout;             // Timeout for receiving ACK
 	
     socklen_t from_len;
 	ci = 0;  // Initialize current index to start of file
+	
+	// Set receive timeout (500ms)
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 500000;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+		printf("Failed to set receive timeout\n");
+	}
 
     // Determine file size by seeking to end
     fseek(fp , 0 , SEEK_END);           // Move file pointer to end
@@ -149,45 +157,59 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
         pack_sends.len = lsize;                     // Total file length (server needs this)
         memcpy(pack_sends.data, (buf + ci), slen); // Copy data from file buffer to packet
 
-        // Send packet via UDP
-        n = sendto(sockfd, &pack_sends, slen + HEADLEN, 0, addr, addrlen);
-        if (n == -1) 
+        // Retransmission loop with timeout handling (single DU - ACK after each packet)
+        int retries = 0;
+        int max_retries = 5;
+        bool ack_received = false;
+        
+        while (!ack_received && retries < max_retries) 
         {
-            printf("Send error!\n");
+            // Send packet via UDP
+            n = sendto(sockfd, &pack_sends, slen + HEADLEN, 0, addr, addrlen);
+            if (n == -1) 
+            {
+                printf("Send error!\n");
+                free(buf);
+                return -1;
+            }
+
+            // Wait for ACK
+            from_len = addrlen;
+            n = recvfrom(sockfd, &ack, sizeof(ack), 0, addr, &from_len);
+
+            if (n == -1) 
+            {
+                // Timeout occurred - retry
+                printf("ACK timeout for seq=%d! Retrying (attempt %d/%d)...\n", 
+                       pack_sends.num, retries + 1, max_retries);
+                retries++;
+                continue;
+            }
+            
+            // Check if ACK is valid (cumulative ACK with last received sequence)
+            int expected_seq = ci / DATALEN;
+            if (ack.num == expected_seq && ack.len == 0) 
+            {
+                printf("ACK received for seq=%d\n", ack.num);
+                ack_received = true;
+            } 
+            else 
+            {
+                printf("Error in acknowledgment: expected seq=%d, got seq=%d\n", expected_seq, ack.num);
+                free(buf);
+                return -1;
+            }
+        }
+        
+        if (!ack_received) 
+        {
+            printf("Max retries exceeded for seq=%d! Transmission failed.\n", pack_sends.num);
             free(buf);
             return -1;
         }
 
         ci += slen;
         du_in_batch++; // increment DU count in batch
-
-        // check if we complete the batch
-        if (du_in_batch >= batch_size) 
-        {
-            // wait for ack
-            from_len = addrlen;
-            n = recvfrom(sockfd, &ack, sizeof(ack), 0, addr, &from_len);
-
-            if (n == -1) 
-            {
-                printf("Receive ACK error!\n");
-                free(buf);
-                return -1;
-            }
-            if (ack.num == 1 && ack.len == 0) 
-            {
-                printf("ACK received for batch of %d DU(s)\n\n", batch_size);
-            } 
-            else 
-            {
-                printf("Error in acknowledgment\n");
-                free(buf);
-                return -1;
-            }
-
-            // Move to next batch
-            du_in_batch = 0;
-        }
     }
 
     gettimeofday(&recvt, NULL);

@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     // Check command line arguments: program requires hostname as parameter
     if (argc != 2) 
     {
-        printf("Parameters do not match");
+        printf("Parameters do not match\n");
         exit(1);
     }
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     sh = gethostbyname(argv[1]);
     if (sh == NULL) 
     {
-        printf("Cannot get host name");
+        printf("Cannot get host name\n");
         exit(1);
     }
 
@@ -105,9 +105,17 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 	// Timing variables
 	float time_inv = 0.0;               // Will store transmission time in milliseconds
 	struct timeval sendt, recvt;        // Timestamps for start and end of transmission
+	struct timeval timeout;             // Timeout for receiving ACK
 	
     socklen_t from_len;
 	ci = 0;  // Initialize current index to start of file
+	
+	// Set receive timeout (500ms)
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 500000;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+		printf("Failed to set receive timeout\n");
+	}
 
     // Determine file size by seeking to end
     fseek(fp , 0 , SEEK_END);           // Move file pointer to end
@@ -164,23 +172,77 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
         // check if we complete the batch
         if (du_in_batch >= batch_size) 
         {
-            // wait for ack
-            from_len = addrlen;
-            n = recvfrom(sockfd, &ack, sizeof(ack), 0, addr, &from_len);
+            // Retransmission loop with timeout handling
+            int retries = 0;
+            int max_retries = 5;
+            bool ack_received = false;
+            
+            while (!ack_received && retries < max_retries) 
+            {
+                // wait for ack
+                from_len = addrlen;
+                n = recvfrom(sockfd, &ack, sizeof(ack), 0, addr, &from_len);
 
-            if (n == -1) 
-            {
-                printf("Receive ACK error!\n");
-                free(buf);
-                return -1;
+                if (n == -1) 
+                {
+                    // Timeout occurred - need to retransmit the entire batch
+                    printf("ACK timeout! Retrying batch (attempt %d/%d)...\n", retries + 1, max_retries);
+                    
+                    // Rewind ci to beginning of current batch
+                    long batch_start = ci - (du_in_batch * DATALEN);
+                    if (batch_start < 0) batch_start = 0;
+                    
+                    // Retransmit all packets in the batch
+                    for (int i = 0; i < du_in_batch; i++) 
+                    {
+                        long retrans_ci = batch_start + (i * DATALEN);
+                        int retrans_slen;
+                        
+                        if ((lsize + 1 - retrans_ci) <= DATALEN) 
+                        {
+                            retrans_slen = lsize + 1 - retrans_ci;
+                        }
+                        else
+                        {
+                            retrans_slen = DATALEN;
+                        }
+                        
+                        pack_sends.num = retrans_ci / DATALEN;
+                        pack_sends.len = lsize;
+                        memcpy(pack_sends.data, (buf + retrans_ci), retrans_slen);
+                        
+                        n = sendto(sockfd, &pack_sends, retrans_slen + HEADLEN, 0, addr, addrlen);
+                        if (n == -1) 
+                        {
+                            printf("Retransmission send error!\n");
+                            free(buf);
+                            return -1;
+                        }
+                        printf("Retransmitted packet seq=%d\n", pack_sends.num);
+                    }
+                    
+                    retries++;
+                    continue;
+                }
+                
+                // Check if ACK is valid (cumulative ACK with last received sequence)
+                int expected_seq = (ci / DATALEN) - 1;
+                if (ack.num == expected_seq && ack.len == 0) 
+                {
+                    printf("ACK received for batch of %d DU(s), seq=%d\n\n", batch_size, ack.num);
+                    ack_received = true;
+                } 
+                else 
+                {
+                    printf("Error in acknowledgment: expected seq=%d, got seq=%d\n", expected_seq, ack.num);
+                    free(buf);
+                    return -1;
+                }
             }
-            if (ack.num == 1 && ack.len == 0) 
+            
+            if (!ack_received) 
             {
-                printf("ACK received for batch of %d DU(s)\n\n", batch_size);
-            } 
-            else 
-            {
-                printf("Error in acknowledgment\n");
+                printf("Max retries exceeded! Transmission failed.\n");
                 free(buf);
                 return -1;
             }
