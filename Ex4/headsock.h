@@ -1,4 +1,4 @@
-// headfile for TCP program
+// headfile for UDP program
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
